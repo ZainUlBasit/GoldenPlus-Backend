@@ -21,7 +21,6 @@ const CompanySchema = new Schema({
   address: reqStr,
   branch: reqNum,
   branchId: { type: mongoose.Types.ObjectId, ref: "Branch" },
-
   total: {
     type: Number,
     default: 0,

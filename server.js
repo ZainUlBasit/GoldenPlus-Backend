@@ -36,7 +36,7 @@ const corsOptions = {
   origin: [
     "http://localhost:3000",
     "https://wfw-expert-system.vercel.app",
-    "https://www.irshadcartondealer.com",
+    "https://golden-plus-pcu.com.pk",
     "http://localhost:5174",
     "http://localhost:5173",
     "http://localhost:5176",

@@ -308,6 +308,125 @@ const GetInvoiceData = async (req, res) => {
     return createError(res, 500, err.message || "Internal Server Error");
   }
 };
+const GetInvoiceInfo = async (req, res) => {
+  const { invoice_no, type } = req.body;
+  // console.log(req.body);
+
+  // return successMessage(res, transactions, "");
+  try {
+    // console.log(req.body);
+
+    if (!invoice_no) {
+      return createError(res, 422, "Invoice # is required!");
+    } else if (!type) {
+      return createError(res, 422, "Type is required!");
+    }
+
+    // Retrieve transactions for the given customer within the specified date range
+    if (type === 1) {
+      const transactions = await Transaction.find({ invoice_no })
+        .populate("customerId")
+        .populate({
+          path: "items",
+          populate: {
+            path: "itemId",
+          },
+        });
+
+      const UpdatedTransactions = transactions
+        .map((data) => {
+          const itemsData = data.items
+            .map((dt) => {
+              if (!dt.itemId) {
+                return null; // Skip items with null or undefined itemId
+              }
+              return {
+                _id: dt._id,
+                itemId: dt.itemId._id,
+                date: data.date,
+                invoice_no: data.invoice_no,
+                article_name: dt.article_name,
+                article_size: dt.article_size,
+                qty: dt.qty,
+                purchase: dt.purchase,
+                price: dt.price,
+                amount: dt.amount,
+              };
+            })
+            .filter((item) => item !== null); // Remove null entries from the array
+          return itemsData;
+        })
+        .flat();
+      return successMessage(
+        res,
+        { Invoice_Info: transactions[0], Data: UpdatedTransactions },
+        "Transactions retrieved successfully!"
+      );
+    } else if (type === 2) {
+      const transactions = await Return.find({ invoice_no })
+        .populate("customerId")
+        .populate({
+          path: "items",
+          populate: {
+            path: "itemId",
+          },
+        });
+      const UpdatedTransactions = transactions
+        .map((data) => {
+          const itemsData = data.items.map((dt) => {
+            return {
+              _id: dt._id,
+              itemId: dt.itemId._id,
+              date: data.date,
+              invoice_no: data.invoice_no,
+              article_name: dt.article_name,
+              article_size: dt.article_size,
+              qty: dt.qty,
+              purchase: dt.purchase,
+              price: dt.price,
+              amount: dt.amount,
+            };
+          });
+          return itemsData;
+        })
+        .flat();
+
+      return successMessage(
+        res,
+        { Invoice_Info: transactions[0], Data: UpdatedTransactions },
+        "Returns retrieved successfully!"
+      );
+    }
+
+    // const UpdatedTransactions = transactions
+    //   .map((data) => {
+    //     const itemsData = data.items
+    //       .map((dt) => {
+    //         if (!dt.itemId) {
+    //           return null; // Skip items with null or undefined itemId
+    //         }
+    //         return {
+    //           _id: dt._id,
+    //           itemId: dt.itemId._id,
+    //           date: data.date,
+    //           invoice_no: data.invoice_no,
+    //           article_name: dt.article_name,
+    //           article_size: dt.article_size,
+    //           qty: dt.qty,
+    //           purchase: dt.purchase,
+    //           price: dt.price,
+    //           amount: dt.amount,
+    //         };
+    //       })
+    //       .filter((item) => item !== null); // Remove null entries from the array
+    //     return itemsData;
+    //   })
+    //   .flat();
+  } catch (err) {
+    console.error("Error occurred while fetching transactions:", err);
+    return createError(res, 500, err.message || "Internal Server Error");
+  }
+};
 
 const GetItemSummary = async (req, res) => {
   const { customerId } = req.body;
@@ -446,7 +565,9 @@ const DeleteInvoice = async (req, res) => {
       invoice_no: current_invoice_no,
     });
 
-    if (!deleteTransaction)
+    console.log(deleteTransaction.deletedCount);
+
+    if (!deleteTransaction || !deleteTransaction.deletedCount)
       return createError(
         res,
         400,
@@ -543,4 +664,5 @@ module.exports = {
   CheckBillNumber,
   UpdateInvoiceItem,
   GetInvoiceData,
+  GetInvoiceInfo,
 };

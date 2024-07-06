@@ -11,11 +11,11 @@ const reqNum = {
   required: true,
 };
 
-const CategorySchema = new Schema({
+const ArticleSchema = new Schema({
   branchId: { type: mongoose.Types.ObjectId, ref: "Branch" },
   name: reqStr,
   branch: reqNum,
 });
 
 module.exports =
-  mongoose.models.Article || mongoose.model("Article", CategorySchema);
+  mongoose.models.Article || mongoose.model("Article", ArticleSchema);

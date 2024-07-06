@@ -78,7 +78,7 @@ const CreateTransaction = async (req, res, next) => {
 
 const GetReturns = async (req, res) => {
   try {
-    const { customerId } = req.body;
+    const { customerId, from, to } = req.body;
     // console.log(req.body);
 
     if (!customerId) {
@@ -88,6 +88,10 @@ const GetReturns = async (req, res) => {
     // Convert dates to seconds (if they're not already)
     const transactions = await Return.find({
       customerId,
+      date: {
+        $gte: Math.floor(new Date(from) / 1000),
+        $lte: Math.floor(new Date(to) / 1000),
+      },
     })
       .populate("customerId")
       .populate({
@@ -99,9 +103,12 @@ const GetReturns = async (req, res) => {
       .map((data) => {
         const itemsData = data.items.map((dt) => {
           return {
+            _id: dt._id,
+            itemId: dt.itemId._id,
             date: data.date,
             invoice_no: data.invoice_no,
-            name: dt.itemId.name,
+            article_name: dt.article_name,
+            article_size: dt.article_size,
             qty: dt.qty,
             purchase: dt.purchase,
             price: dt.price,
