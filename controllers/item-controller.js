@@ -124,22 +124,16 @@ const addItem = async (req, res, next) => {
 // working done
 //******************************************************
 const updateItem = async (req, res) => {
-  const { id } = req.params;
   const {
+    itemId: id,
     size,
-    branchId,
     articleId,
     purchase,
     sale,
-    in_qty,
-    out_qty,
-    qty,
-    branch,
     article_name,
-    branch_name,
   } = req.body;
 
-  if (!size || !articleId || !purchase || !sale) {
+  if (!size || !articleId || purchase === undefined || sale === undefined) {
     return res
       .status(400)
       .json({ success: false, message: "Required fields are missing!" });
@@ -150,17 +144,10 @@ const updateItem = async (req, res) => {
       id,
       {
         size,
-        branchId,
         articleId,
         purchase,
         sale,
-        in_qty,
-        out_qty,
-        qty,
-        branch,
         article_name,
-        branch_name,
-        addeddate: Math.floor(Date.now() / 1000),
       },
       { new: true } // This option returns the modified document rather than the original
     );
@@ -178,12 +165,10 @@ const updateItem = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Server error. Please try again later.",
-      });
+    res.status(500).json({
+      success: false,
+      message: "Server error. Please try again later.",
+    });
   }
 };
 //******************************************************
