@@ -16,6 +16,12 @@ router.patch(
   VerifyBranch,
   CustomerController.UpdateCustomer
 );
+router.patch(
+  "/update-opening-balance",
+  VerifyUserCookie,
+  VerifyBranch,
+  CustomerController.UpdateCustomerOpeningBalance
+);
 router.delete(
   "/delete/:id",
   VerifyUserCookie,

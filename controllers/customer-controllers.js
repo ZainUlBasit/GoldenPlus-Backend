@@ -68,6 +68,37 @@ const UpdateCustomer = async (req, res, next) => {
     return createError(res, 500, err.message || err);
   }
 };
+const UpdateCustomerOpeningBalance = async (req, res, next) => {
+  const { customerId, newBalance } = req.body;
+  console.log(req.body);
+
+  if (!customerId || !newBalance)
+    return createError(res, 422, "Required fields are undefined!");
+  try {
+    let customer = await Customer.findByIdAndUpdate(
+      customerId,
+      {
+        $inc: {
+          total: Number(newBalance),
+          remaining: Number(newBalance),
+          opening_balance: Number(newBalance),
+        },
+      }, // Decrement qty field by decrementQty
+      { new: true }
+    );
+    if (customer)
+      return successMessage(
+        res,
+        customer,
+        "Opening Balance Successfully Updated!"
+      );
+    else
+      return createError(res, 400, "Unable to update Customer Opening Balance");
+  } catch (err) {
+    console.log(err);
+    return createError(res, 500, err.message || err);
+  }
+};
 const deleteCustomer = async (req, res, next) => {
   const { id: customerId } = req.params;
   console.log(customerId);
@@ -271,6 +302,7 @@ module.exports = {
   getBranchCustomers,
   getAllCustomers,
   UpdateCustomer,
+  UpdateCustomerOpeningBalance,
   deleteCustomer,
   addCustomer,
   CheckCustomers,
