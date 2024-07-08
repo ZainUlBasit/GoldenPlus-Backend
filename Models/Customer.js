@@ -30,6 +30,7 @@ const CustomerSchema = new Schema({
   page: reqNum,
   return_amount: { type: Number, default: 0, required: true },
   discount: { type: Number, default: 0, required: true },
+  opening_balance: { type: Number, default: 0, required: true },
   paid: { type: Number, default: 0, required: true },
   remaining: { type: Number, default: 0, required: true },
   total: { type: Number, default: 0, required: true },
