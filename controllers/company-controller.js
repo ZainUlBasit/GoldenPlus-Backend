@@ -47,7 +47,7 @@ const CreateCompany = async (req, res) => {
 
   const companySchema = Joi.object({
     name: Joi.string().required(),
-    email: Joi.string().email().required(),
+    email: Joi.string().required(),
     contact: Joi.string().required(),
     cnic: Joi.string().required(),
     description: Joi.string().required(),
@@ -108,7 +108,7 @@ const updateCompany = async (req, res, next) => {
       "Name is required and must be a non-empty string."
     );
   }
-  if (typeof payload.email !== "string" || !isValidEmail(payload.email)) {
+  if (typeof payload.email !== "string" || payload.email.trim() === "") {
     return createError(
       res,
       422,
