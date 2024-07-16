@@ -20,6 +20,7 @@ const AddRawMaterialStock = async (req, res) => {
     truck_no: Joi.string().required(),
     date: Joi.date().required(),
     branch: Joi.number().required(),
+    old: Joi.boolean().required(),
     desc: Joi.string().required(),
   });
 
@@ -39,6 +40,7 @@ const AddRawMaterialStock = async (req, res) => {
     date,
     desc,
     branch,
+    old,
   } = req.body;
 
   try {
@@ -59,19 +61,20 @@ const AddRawMaterialStock = async (req, res) => {
       desc,
     }).save();
 
-    const updateValue = {
-      $inc: { total: qty * purchase, remaining: qty * purchase },
-    };
-
     // Assuming you have a Company model to update company accounts
-    const updatedSupplier = await Company.findByIdAndUpdate(
-      supplierId,
-      updateValue,
-      { new: true }
-    );
+    if (!old) {
+      const updateValue = {
+        $inc: { total: qty * purchase, remaining: qty * purchase },
+      };
+      const updatedSupplier = await Company.findByIdAndUpdate(
+        supplierId,
+        updateValue,
+        { new: true }
+      );
 
-    if (!updatedSupplier)
-      return createError(res, 400, "Unable to update Supplier Accounts!");
+      if (!updatedSupplier)
+        return createError(res, 400, "Unable to update Supplier Accounts!");
+    }
 
     if (!newStock)
       return createError(res, 400, "Unable to add Stock in Raw Materials!");

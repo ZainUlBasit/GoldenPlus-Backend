@@ -23,6 +23,7 @@ const PaymentRoutes = require("./routes/payment.routes");
 const StockRoutes = require("./routes/stock-routes");
 const TransactionkRoutes = require("./routes/transaction-route");
 const BranchRoutes = require("./routes/branch.routes");
+const AccountRoutes = require("./routes/accounts.routes");
 const RM_Routes = require("./routes/raw-material-routes");
 const { successMessage } = require("./utils/ResponseMessage");
 
@@ -40,6 +41,7 @@ const corsOptions = {
     "http://localhost:5174",
     "http://localhost:5173",
     "http://localhost:5176",
+    "http://localhost:5177",
   ],
   credentials: true,
 };
@@ -75,6 +77,7 @@ app.use("/api/stock", StockRoutes);
 app.use("/api/sale-return", SalesReturnRoutes);
 app.use("/api/transaction", TransactionkRoutes);
 app.use("/api/branch", BranchRoutes);
+app.use("/api/accounts", AccountRoutes);
 
 server.listen(port, () => {
   console.log(`Listening to port ${port}`);
