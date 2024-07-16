@@ -295,6 +295,38 @@ const getCompanyPayment = async (req, res, next) => {
   return res.status(201).json(companyPayment);
 };
 
+const UpdateCompanyOpeningBalance = async (req, res, next) => {
+  const { companyId, newBalance } = req.body;
+  console.log(req.body);
+
+  if (!companyId || !newBalance)
+    return createError(res, 422, "Required fields are undefined!");
+  try {
+    let company = await Company.findByIdAndUpdate(
+      companyId,
+      {
+        $inc: {
+          total: Number(newBalance),
+          remaining: Number(newBalance),
+          opening_balance: Number(newBalance),
+        },
+      }, // Decrement qty field by decrementQty
+      { new: true }
+    );
+    if (company)
+      return successMessage(
+        res,
+        company,
+        "Opening Balance Successfully Updated!"
+      );
+    else
+      return createError(res, 400, "Unable to update Company Opening Balance");
+  } catch (err) {
+    console.log(err);
+    return createError(res, 500, err.message || err);
+  }
+};
+
 module.exports = {
   getAllCompanies,
   getBranchCompanies,
@@ -305,4 +337,5 @@ module.exports = {
   addCompanyPayment,
   getCompanyPayment,
   updateCompanyPayment,
+  UpdateCompanyOpeningBalance,
 };

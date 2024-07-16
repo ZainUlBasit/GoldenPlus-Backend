@@ -25,6 +25,10 @@ const CompanySchema = new Schema({
     type: Number,
     default: 0,
   },
+  opening_balance: {
+    type: Number,
+    default: 0,
+  },
   paid: {
     type: Number,
     default: 0,

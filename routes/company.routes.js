@@ -22,6 +22,13 @@ router.delete(
   CompanyController.deleteCompany
 );
 
+router.patch(
+  "/update-opening-balance",
+  VerifyUserCookie,
+  VerifyBranch,
+  CompanyController.UpdateCompanyOpeningBalance
+);
+
 router.get("/all", CompanyController.getAllCompanies);
 
 module.exports = router;
