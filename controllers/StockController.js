@@ -8,6 +8,8 @@ const AddStock = async (req, res) => {
   console.log(req.body);
 
   const stockValidationSchema = Joi.object({
+    type: Joi.number().required(),
+    supplierId: Joi.string().regex(/^[0-9a-fA-F]{24}$/),
     branchId: Joi.string()
       .regex(/^[0-9a-fA-F]{24}$/)
       .required(),
@@ -33,6 +35,8 @@ const AddStock = async (req, res) => {
   if (error) return createError(res, 422, error.message);
 
   const {
+    supplierId,
+    type,
     branchId,
     branch_name,
     articleId,
@@ -51,6 +55,8 @@ const AddStock = async (req, res) => {
   try {
     // Create a new Stock document
     const newStock = await new Stock({
+      supplierId,
+      type,
       branchId,
       branch_name,
       articleId,
@@ -68,6 +74,23 @@ const AddStock = async (req, res) => {
     }).save();
 
     if (!newStock) return createError(res, 400, "Unable to add new Stock!");
+
+    if (type === 2) {
+      const updateValue = {
+        $inc: {
+          total: Number(qty) * Number(purchase),
+          remaining: Number(qty) * Number(purchase),
+        },
+      };
+      const updatedSupplier = await Company.findByIdAndUpdate(
+        supplierId,
+        updateValue,
+        { new: true }
+      );
+
+      if (!updatedSupplier)
+        return createError(res, 400, "Unable to update Supplier Accounts!");
+    }
 
     const item = await Item.findById(sizeId);
     if (!item) return createError(res, 404, "Item not found!");

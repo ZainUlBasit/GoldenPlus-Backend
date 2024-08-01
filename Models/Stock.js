@@ -13,6 +13,13 @@ const reqNum = {
 };
 
 const StockSchema = new Schema({
+  type: {
+    type: Number,
+    enum: [1, 2], // 1: Self, 2: Supplier
+    default: 1,
+    required: true,
+  },
+  supplierId: { type: mongoose.Types.ObjectId, ref: "Company" },
   sizeId: { type: mongoose.Types.ObjectId, ref: "Item" },
   size: reqStr,
   branchId: { type: mongoose.Types.ObjectId, ref: "Branch" },

@@ -29,6 +29,7 @@ const getAccounts = async (req, res) => {
     let accounts;
     if (branchId === -1) accounts = await Account.find();
     else accounts = await Account.find({ branchId });
+    console.log(accounts);
     return successMessage(res, accounts, "Accounts Successfully Retrieved!");
   } catch (err) {
     return createError(res, 500, err.message);

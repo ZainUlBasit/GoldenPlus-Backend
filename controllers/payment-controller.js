@@ -21,6 +21,7 @@ const addPayment = async (req, res, next) => {
     desc,
     branch,
   } = req.body;
+  console.log(req.body);
 
   const reqStr = Joi.string().required();
   const reqNum = Joi.number().required();
@@ -48,7 +49,7 @@ const addPayment = async (req, res, next) => {
     const UpdateAmount =
       user_type === 1 ? Number(amount) * -1 : user_type === 2 && Number(amount);
     const account = await Account.findOneAndUpdate(
-      { account_name: bank_name, account_no: bank_name },
+      { account_name: bank_name },
       { $inc: { amount: UpdateAmount } },
       { new: true }
     );

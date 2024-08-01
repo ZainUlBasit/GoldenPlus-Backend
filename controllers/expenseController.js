@@ -111,7 +111,7 @@ const addExpense = async (req, res, next) => {
   let newExpense;
   try {
     const UpdateAmount = Number(expense) * -1;
-    const account = await Account.findByIdAndDelete(
+    const account = await Account.findByIdAndUpdate(
       accountId,
       { $inc: { amount: UpdateAmount } },
       { new: true }
