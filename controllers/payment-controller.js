@@ -5,6 +5,7 @@ const { isValidObjectId } = require("mongoose");
 const Payment = require("../Models/Payment");
 const Customer = require("../Models/Customer");
 const Company = require("../Models/Company");
+const Account = require("../Models/Account");
 
 const addPayment = async (req, res, next) => {
   const {
@@ -44,6 +45,16 @@ const addPayment = async (req, res, next) => {
   }
 
   try {
+    const UpdateAmount =
+      user_type === 1 ? Number(amount) * -1 : user_type === 2 && Number(amount);
+    const account = await Account.findOneAndUpdate(
+      { account_name: bank_name, account_no: bank_name },
+      { $inc: { amount: UpdateAmount } },
+      { new: true }
+    );
+
+    if (!account) return createError(res, 404, "Account not found");
+
     if (user_type === 2 || user_type === "2") {
       const updateCustomerAccount = await Customer.findByIdAndUpdate(
         user_Id,
