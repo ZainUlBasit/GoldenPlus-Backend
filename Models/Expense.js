@@ -16,6 +16,8 @@ const ExpenseSchema = new Schema({
   desc: reqStr,
   expense: reqNum,
   branch: reqNum,
+  accountId: { type: mongoose.Types.ObjectId, ref: "Account" },
+  account_name: reqStr,
 });
 
 module.exports = mongoose.model("Expense", ExpenseSchema);

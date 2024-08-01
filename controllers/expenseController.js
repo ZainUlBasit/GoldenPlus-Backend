@@ -3,6 +3,7 @@ const Expense = require("../Models/Expense");
 const { createError, successMessage } = require("../utils/ResponseMessage");
 const Transaction = require("../Models/Transaction");
 const User = require("../Models/User");
+const Account = require("../Models/Account");
 
 const getAllExpenses = async (req, res, next) => {
   const { fromDate = 0, toDate = Math.floor(Date.now() / 1000) } = req.body;
@@ -86,6 +87,8 @@ const addExpense = async (req, res, next) => {
     desc,
     expense,
     branch,
+    accountId,
+    account,
   } = req.body;
 
   const reqStr = Joi.string().required();
@@ -96,6 +99,8 @@ const addExpense = async (req, res, next) => {
     desc: reqStr,
     expense: reqNum,
     branch: reqNum,
+    accountId: reqStr,
+    account: reqStr,
   });
 
   const { error } = ExpenseSchema.validate(req.body.values);
@@ -105,11 +110,22 @@ const addExpense = async (req, res, next) => {
 
   let newExpense;
   try {
+    const UpdateAmount = Number(expense) * -1;
+    const account = await Account.findByIdAndDelete(
+      accountId,
+      { $inc: { amount: UpdateAmount } },
+      { new: true }
+    );
+
+    if (!account) return createError(res, 404, "Account not found");
+
     newExpense = await new Expense({
       date: Math.floor(new Date(date) / 1000),
       desc,
       expense,
       branch,
+      account_name: account,
+      accountId: accountId,
     }).save();
     if (!newExpense) return createError(res, 400, "Unable to add Expense!");
     return successMessage(res, newExpense, "Expense Successfully Added!");
