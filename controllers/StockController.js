@@ -54,24 +54,44 @@ const AddStock = async (req, res) => {
 
   try {
     // Create a new Stock document
-    const newStock = await new Stock({
-      supplierId,
-      type,
-      branchId,
-      branch_name,
-      articleId,
-      article_name,
-      sizeId,
-      size,
-      qty,
-      purchase,
-      total_amount: purchase * qty,
-      invoice_no,
-      truck_no,
-      date: Math.floor(new Date(date) / 1000),
-      desc,
-      branch,
-    }).save();
+    const newStock = await new Stock(
+      supplierId
+        ? {
+            supplierId,
+            type,
+            branchId,
+            branch_name,
+            articleId,
+            article_name,
+            sizeId,
+            size,
+            qty,
+            purchase,
+            total_amount: purchase * qty,
+            invoice_no,
+            truck_no,
+            date: Math.floor(new Date(date) / 1000),
+            desc,
+            branch,
+          }
+        : {
+            type,
+            branchId,
+            branch_name,
+            articleId,
+            article_name,
+            sizeId,
+            size,
+            qty,
+            purchase,
+            total_amount: purchase * qty,
+            invoice_no,
+            truck_no,
+            date: Math.floor(new Date(date) / 1000),
+            desc,
+            branch,
+          }
+    ).save();
 
     if (!newStock) return createError(res, 400, "Unable to add new Stock!");
 
