@@ -9,6 +9,12 @@ router.patch(
   VerifyBranch,
   StockController.EditStock
 );
+router.delete(
+  "/delete/:id",
+  VerifyUserCookie,
+  VerifyBranch,
+  StockController.DeleteStock
+);
 router.post(
   "/all",
   VerifyUserCookie,

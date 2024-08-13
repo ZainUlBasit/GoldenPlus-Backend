@@ -263,6 +263,69 @@ const EditStock = async (req, res) => {
   }
 };
 
+const DeleteStock = async (req, res) => {
+  const stockValidationSchema = Joi.object({
+    stockId: Joi.string()
+      .regex(/^[0-9a-fA-F]{24}$/)
+      .required(),
+  });
+
+  const { error } = stockValidationSchema.validate(req.params);
+  if (error) return createError(res, 422, error.message);
+
+  const { id: stockId } = req.params;
+
+  try {
+    const existingStock = await Stock.findById(stockId);
+    if (!existingStock) return createError(res, 404, "Stock not found!");
+
+    // Adjust supplier accounts if needed
+    if (existingStock.type === 2) {
+      const updateValue = {
+        $inc: {
+          total: -(Number(existingStock.qty) * Number(existingStock.purchase)),
+          remaining: -(
+            Number(existingStock.qty) * Number(existingStock.purchase)
+          ),
+        },
+      };
+      const updatedSupplier = await Company.findByIdAndUpdate(
+        existingStock.supplierId,
+        updateValue,
+        { new: true }
+      );
+      if (!updatedSupplier)
+        return createError(res, 400, "Unable to update Supplier Accounts!");
+    }
+
+    // Adjust item quantities
+    const item = await Item.findById(existingStock.sizeId);
+    if (!item) return createError(res, 404, "Item not found!");
+
+    const updatedItem = await Item.findByIdAndUpdate(
+      existingStock.sizeId,
+      {
+        qty: Number(item.qty) - Number(existingStock.qty),
+        in_qty: item.in_qty
+          ? Number(item.in_qty) - Number(existingStock.qty)
+          : 0,
+      },
+      { new: true }
+    );
+    if (!updatedItem)
+      return createError(res, 400, "Unable to update item Quantity!");
+
+    // Delete the stock entry
+    const deletedStock = await Stock.findByIdAndDelete(stockId);
+    if (!deletedStock) return createError(res, 400, "Unable to delete Stock!");
+
+    return successMessage(res, deletedStock, "Stock Successfully Deleted!");
+  } catch (err) {
+    console.error("Error deleting stock:", err);
+    return createError(res, 500, err.message || err);
+  }
+};
+
 const GetStockByAdmin = async (req, res) => {
   const { startDate = 0, endDate = Math.floor(Date.now() / 1000) } = req.body;
   try {
@@ -332,4 +395,5 @@ module.exports = {
   EditStock,
   GetStockByAdmin,
   GetStockByBranch,
+  DeleteStock,
 };
