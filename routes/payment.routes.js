@@ -16,8 +16,8 @@ router.post(
   VerifyBranch,
   PaymentController.updatePayment
 );
-router.post(
-  "/delete",
+router.delete(
+  "/delete/:id",
   VerifyUserCookie,
   VerifyBranch,
   PaymentController.deletePayment

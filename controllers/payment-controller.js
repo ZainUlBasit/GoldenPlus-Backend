@@ -156,55 +156,72 @@ const getBranchPayments = async (req, res, next) => {
   }
 };
 
-const deletePayment = async (req, res, next) => {
-  const { paymentInfo } = req.body;
-  if (!paymentInfo._id) {
-    return createError(res, 422, "Required fields are undefined!");
-  }
+const deletePayment = async (req, res) => {
+  const { id: paymentId } = req.params;
+
+  // Validate paymentId
+  const paymentValidationSchema = Joi.object({
+    id: Joi.string()
+      .regex(/^[0-9a-fA-F]{24}$/)
+      .required(),
+  });
+
+  const { error } = paymentValidationSchema.validate(req.params);
+  if (error) return createError(res, 422, error.message);
 
   try {
-    const deletedPayment = await Payment.findByIdAndDelete(paymentInfo._id);
-    if (!deletedPayment) {
-      return createError(res, 400, "Payment with such id does not exist!");
+    // Find the payment record
+    const payment = await Payment.findById(paymentId);
+    if (!payment) return createError(res, 404, "Payment not found!");
+
+    const { user_type, user_Id, amount, bank_name } = payment;
+
+    // Adjust the account balance
+    if (bank_name) {
+      const updateAmount =
+        user_type === 1 ? Number(amount) : Number(amount) * -1;
+      const account = await Account.findOneAndUpdate(
+        { account_name: bank_name },
+        { $inc: { amount: updateAmount } },
+        { new: true }
+      );
+
+      if (!account) return createError(res, 404, "Account not found!");
     }
 
-    if (paymentInfo.user_type === 2 || paymentInfo.user_type === "2") {
+    // Adjust the customer or company account balance
+    if (user_type === 2) {
       const updateCustomerAccount = await Customer.findByIdAndUpdate(
-        paymentInfo.user_Id,
-        {
-          $inc: {
-            paid: -paymentInfo.amount,
-            remaining: paymentInfo.amount,
-          },
-        }, // Decrement qty field by decrementQty
+        user_Id,
+        { $inc: { paid: amount * -1, remaining: amount } },
         { new: true }
       );
 
       if (!updateCustomerAccount)
         return createError(res, 400, "Unable to update customer accounts!");
-    } else if (paymentInfo.user_type === 1 || paymentInfo.user_type === "1") {
+    } else if (user_type === 1) {
       const updateValue = {
-        $inc: {
-          paid: -paymentInfo.amount,
-          remaining: paymentInfo.amount,
-        },
+        $inc: { paid: amount * -1, remaining: amount },
       };
       const updatedCompany = await Company.findByIdAndUpdate(
-        paymentInfo.user_Id,
+        user_Id,
         updateValue,
         { new: true }
       );
+
       if (!updatedCompany)
         return createError(res, 400, "Unable to update company accounts!");
     }
 
-    return successMessage(
-      res,
-      deletedPayment,
-      `Payment ${deletedPayment._id} is successfully deleted!`
-    );
-  } catch (error) {
-    return createError(res, 500, error.message || error);
+    // Delete the payment record
+    const deletedPayment = await Payment.findByIdAndDelete(paymentId);
+    if (!deletedPayment)
+      return createError(res, 400, "Unable to delete payment!");
+
+    return successMessage(res, deletedPayment, "Payment Successfully Deleted!");
+  } catch (err) {
+    console.error("Error deleting payment:", err);
+    return createError(res, 500, err.message || "Internal Server Error!");
   }
 };
 
