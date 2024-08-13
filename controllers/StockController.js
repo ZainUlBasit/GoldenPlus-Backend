@@ -265,7 +265,7 @@ const EditStock = async (req, res) => {
 
 const DeleteStock = async (req, res) => {
   const stockValidationSchema = Joi.object({
-    stockId: Joi.string()
+    id: Joi.string()
       .regex(/^[0-9a-fA-F]{24}$/)
       .required(),
   });
