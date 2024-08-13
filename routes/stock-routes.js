@@ -3,6 +3,12 @@ const { VerifyUserCookie, VerifyBranch } = require("../Middleware/auth");
 const StockController = require("../controllers/StockController");
 
 router.post("/add", VerifyUserCookie, VerifyBranch, StockController.AddStock);
+router.patch(
+  "/edit",
+  VerifyUserCookie,
+  VerifyBranch,
+  StockController.EditStock
+);
 router.post(
   "/all",
   VerifyUserCookie,

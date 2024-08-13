@@ -134,6 +134,135 @@ const AddStock = async (req, res) => {
   }
 };
 
+const EditStock = async (req, res) => {
+  console.log(req.body);
+
+  const stockValidationSchema = Joi.object({
+    stockId: Joi.string()
+      .regex(/^[0-9a-fA-F]{24}$/)
+      .required(),
+    type: Joi.number().required(),
+    supplierId: Joi.string().regex(/^[0-9a-fA-F]{24}$/),
+    branchId: Joi.string()
+      .regex(/^[0-9a-fA-F]{24}$/)
+      .required(),
+    branch_name: Joi.string().required(),
+    branch: Joi.number().required(),
+    articleId: Joi.string()
+      .regex(/^[0-9a-fA-F]{24}$/)
+      .required(),
+    article_name: Joi.string().required(),
+    sizeId: Joi.string()
+      .regex(/^[0-9a-fA-F]{24}$/)
+      .required(),
+    size: Joi.string().required(),
+    qty: Joi.number().required(),
+    purchase: Joi.number().required(),
+    invoice_no: Joi.string().required(),
+    truck_no: Joi.string().required(),
+    date: Joi.date().required(),
+    desc: Joi.string().required(),
+  });
+
+  const { error } = stockValidationSchema.validate(req.body);
+  if (error) return createError(res, 422, error.message);
+
+  const {
+    stockId,
+    supplierId,
+    type,
+    branchId,
+    branch_name,
+    articleId,
+    article_name,
+    branch,
+    sizeId,
+    size,
+    qty,
+    purchase,
+    invoice_no,
+    truck_no,
+    date,
+    desc,
+  } = req.body;
+
+  try {
+    const existingStock = await Stock.findById(stockId);
+    if (!existingStock) return createError(res, 404, "Stock not found!");
+
+    // Adjust supplier and item quantities if the type or qty has changed
+    if (existingStock.type === 2 && existingStock.qty !== qty) {
+      const updateValue = {
+        $inc: {
+          total:
+            Number(qty) * Number(purchase) -
+            Number(existingStock.qty) * Number(existingStock.purchase),
+          remaining:
+            Number(qty) * Number(purchase) -
+            Number(existingStock.qty) * Number(existingStock.purchase),
+        },
+      };
+      const updatedSupplier = await Company.findByIdAndUpdate(
+        supplierId,
+        updateValue,
+        { new: true }
+      );
+
+      if (!updatedSupplier)
+        return createError(res, 400, "Unable to update Supplier Accounts!");
+    }
+
+    // Update the stock entry
+    const updatedStock = await Stock.findByIdAndUpdate(
+      stockId,
+      {
+        supplierId,
+        type,
+        branchId,
+        branch_name,
+        articleId,
+        article_name,
+        sizeId,
+        size,
+        qty,
+        purchase,
+        total_amount: purchase * qty,
+        invoice_no,
+        truck_no,
+        date: Math.floor(new Date(date) / 1000),
+        desc,
+        branch,
+      },
+      { new: true }
+    );
+
+    if (!updatedStock) return createError(res, 400, "Unable to update Stock!");
+
+    // Adjust item quantities if needed
+    const item = await Item.findById(sizeId);
+    if (!item) return createError(res, 404, "Item not found!");
+
+    const updatedItem = await Item.findByIdAndUpdate(
+      sizeId,
+      {
+        qty: Number(item.qty) + (Number(qty) - Number(existingStock.qty)),
+        in_qty: item.in_qty
+          ? Number(item.in_qty) + (Number(qty) - Number(existingStock.qty))
+          : Number(qty),
+      },
+      { new: true }
+    );
+
+    if (!updatedItem)
+      return createError(res, 400, "Unable to update item Quantity!");
+
+    return successMessage(res, updatedStock, "Stock Successfully Updated!");
+  } catch (err) {
+    console.error("Error updating stock:", err);
+    return createError(res, 500, err.message || err);
+  }
+};
+
 const GetStockByAdmin = async (req, res) => {
   const { startDate = 0, endDate = Math.floor(Date.now() / 1000) } = req.body;
   try {
@@ -200,6 +329,7 @@ const GetStockByBranch = async (req, res) => {
 
 module.exports = {
   AddStock,
+  EditStock,
   GetStockByAdmin,
   GetStockByBranch,
 };
