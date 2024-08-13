@@ -225,56 +225,143 @@ const deletePayment = async (req, res) => {
   }
 };
 
-const updatePayment = async (req, res, next) => {
-  const { paymentInfo, payload } = req.body;
+const updatePayment = async (req, res) => {
+  const { id: paymentId } = req.params;
+  const {
+    user_type,
+    user_Id,
+    user_name,
+    depositor,
+    payment_type,
+    bank_name,
+    bank_number,
+    amount,
+    date,
+    desc,
+    branch,
+  } = req.body;
+  console.log(req.body);
 
-  // console.log(req.body);
+  const reqStr = Joi.string().required();
+  const reqNum = Joi.number().required();
 
-  if (!paymentInfo || !payload) {
-    return createError(res, 422, "Required field are undefined!");
-  }
+  const paymentSchema = Joi.object({
+    user_type: Joi.number().valid(1, 2).required(),
+    user_Id: reqStr,
+    user_name: reqStr,
+    depositor: reqStr,
+    payment_type: Joi.number().valid(1, 2).required(),
+    bank_name: reqStr.allow(null), // Allow null for Cash payments
+    bank_number: reqNum.allow(null), // Allow null for Cash payments
+    amount: reqNum,
+    date: reqNum,
+    desc: reqStr,
+    branch: reqNum,
+  });
 
-  let payment;
+  const { error } = paymentSchema.validate(req.body);
+  if (error) return createError(res, 422, error.message);
+
   try {
-    payment = await Payment.findByIdAndUpdate(paymentInfo._id, payload, {
-      new: true,
-    });
-    if (!payment) {
-      return createError(res, 404, "Payment with such id was not found!");
+    // Find the existing payment record
+    const existingPayment = await Payment.findById(paymentId);
+    if (!existingPayment) return createError(res, 404, "Payment not found!");
+
+    const {
+      amount: oldAmount,
+      bank_name: oldBankName,
+      user_type: oldUserType,
+      user_Id: oldUserId,
+    } = existingPayment;
+
+    // Adjust the previous account balance if bank_name was provided
+    if (oldBankName) {
+      const oldUpdateAmount =
+        oldUserType === 1 ? Number(oldAmount) : Number(oldAmount) * -1;
+      await Account.findOneAndUpdate(
+        { account_name: oldBankName },
+        { $inc: { amount: oldUpdateAmount } },
+        { new: true }
+      );
     }
-    if (paymentInfo.user_type === 2 || paymentInfo.user_type === "2") {
+
+    // Adjust the previous customer or company balance
+    if (oldUserType === 2) {
+      await Customer.findByIdAndUpdate(
+        oldUserId,
+        { $inc: { paid: oldAmount * -1, remaining: oldAmount } },
+        { new: true }
+      );
+    } else if (oldUserType === 1) {
+      const updateValue = {
+        $inc: { paid: oldAmount * -1, remaining: oldAmount },
+      };
+      await Company.findByIdAndUpdate(oldUserId, updateValue, { new: true });
+    }
+
+    // Adjust the new account balance if bank_name was provided
+    if (bank_name) {
+      const newUpdateAmount =
+        user_type === 1 ? Number(amount) * -1 : Number(amount);
+      const account = await Account.findOneAndUpdate(
+        { account_name: bank_name },
+        { $inc: { amount: newUpdateAmount } },
+        { new: true }
+      );
+
+      if (!account) return createError(res, 404, "Account not found!");
+    }
+
+    // Adjust the new customer or company balance
+    if (user_type === 2) {
       const updateCustomerAccount = await Customer.findByIdAndUpdate(
-        paymentInfo.user_Id,
-        {
-          $inc: {
-            paid: -paymentInfo.amount + payload.amount,
-            remaining: paymentInfo.amount - payload.amount,
-          },
-        }, // Decrement qty field by decrementQty
+        user_Id,
+        { $inc: { paid: amount, remaining: amount * -1 } },
         { new: true }
       );
 
       if (!updateCustomerAccount)
         return createError(res, 400, "Unable to update customer accounts!");
-    } else if (paymentInfo.user_type === 1 || paymentInfo.user_type === "1") {
+    } else if (user_type === 1) {
       const updateValue = {
-        $inc: {
-          paid: -paymentInfo.amount + payload.amount,
-          remaining: -paymentInfo.amount + payload.amount,
-        },
+        $inc: { paid: amount, remaining: amount * -1 },
       };
       const updatedCompany = await Company.findByIdAndUpdate(
-        paymentInfo.user_Id,
+        user_Id,
         updateValue,
         { new: true }
       );
+
       if (!updatedCompany)
         return createError(res, 400, "Unable to update company accounts!");
     }
-    return successMessage(res, payment, "Payment Successfully Updated!");
+
+    // Update the payment record
+    const updatedPayment = await Payment.findByIdAndUpdate(
+      paymentId,
+      {
+        user_type,
+        user_Id,
+        user_name,
+        depositor,
+        payment_type,
+        bank_name,
+        bank_number,
+        amount,
+        date: Math.floor(new Date(date) / 1000),
+        desc,
+        branch,
+      },
+      { new: true }
+    );
+
+    if (!updatedPayment)
+      return createError(res, 400, "Unable to update Payment!");
+
+    return successMessage(res, updatedPayment, "Payment Successfully Updated!");
   } catch (err) {
-    console.log("error: ", err);
-    return createError(res, 500, err.message || err);
+    console.error("Error updating payment:", err);
+    return createError(res, 500, err.message || "Internal Server Error!");
   }
 };
 

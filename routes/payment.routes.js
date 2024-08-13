@@ -10,8 +10,8 @@ router.post(
 );
 router.post("/all", PaymentController.getAllPayments);
 router.post("/branch", VerifyUserCookie, PaymentController.getBranchPayments);
-router.post(
-  "/update",
+router.patch(
+  "/update/:id",
   VerifyUserCookie,
   VerifyBranch,
   PaymentController.updatePayment
