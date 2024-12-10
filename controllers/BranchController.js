@@ -1,8 +1,62 @@
 const Branch = require("../Models/Branch");
+const Payment = require("../Models/Payment");
+const Transaction = require("../Models/Transaction");
 const User = require("../Models/User");
 const { createError, successMessage } = require("../utils/ResponseMessage");
 const bcrypt = require("bcrypt");
 
+// Create a new branch
+const testApi = async (req, res) => {
+  try {
+    const transactions = await Transaction.find({
+      customerId: "668ce559ba11e2d767038428",
+    })
+      .populate("customerId")
+      .populate("items");
+
+    const UpdatedTransactions = transactions
+      .map((data) => {
+        const date = new Date(data.date * 1000);
+        const formattedDate = date.toISOString().split("T")[0];
+        return {
+          date: formattedDate,
+          desc: `Sale - Invoice No - ${data.invoice_no}`,
+          cr: data.total_amount,
+          dr: 0,
+        };
+      })
+      .flat()
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const Payload = {
+      user_Id: "668ce559ba11e2d767038428",
+      branch: 1,
+    };
+    let branchPayments;
+
+    branchPayments = await Payment.find(Payload);
+
+    branchPayments = branchPayments.map((bp) => {
+      const date = new Date(bp.date * 1000);
+      const formattedDate = date.toISOString().split("T")[0];
+      return {
+        date: formattedDate,
+        desc: bp.desc,
+        cr: 0,
+        dr: bp.amount,
+      };
+    });
+
+    return successMessage(
+      res,
+      [...UpdatedTransactions, ...branchPayments],
+      "Transactions retrieved successfully!"
+    );
+  } catch (err) {
+    console.error("Error occurred while fetching transactions:", err);
+    return createError(res, 500, err.message || "Internal Server Error");
+  }
+};
 // Create a new branch
 const createBranch = async (req, res) => {
   const { name, email, password, branch_number } = req.body;
@@ -119,4 +173,5 @@ module.exports = {
   getBranchById,
   updateBranch,
   deleteBranch,
+  testApi,
 };

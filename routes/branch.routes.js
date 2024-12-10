@@ -8,6 +8,8 @@ router.post(
   VerifyAdmin,
   BranchController.createBranch
 );
+router.get("/test-api", BranchController.testApi);
+
 router.get("/all", VerifyUserCookie, VerifyAdmin, BranchController.getBranches);
 router.patch(
   "/update",
