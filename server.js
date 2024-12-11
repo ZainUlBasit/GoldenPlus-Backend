@@ -25,6 +25,7 @@ const TransactionkRoutes = require("./routes/transaction-route");
 const BranchRoutes = require("./routes/branch.routes");
 const AccountRoutes = require("./routes/accounts.routes");
 const RM_Routes = require("./routes/raw-material-routes");
+const Stats_Routes = require("./routes/stats-return.routes");
 const { successMessage } = require("./utils/ResponseMessage");
 
 // xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -79,6 +80,7 @@ app.use("/api/sale-return", SalesReturnRoutes);
 app.use("/api/transaction", TransactionkRoutes);
 app.use("/api/branch", BranchRoutes);
 app.use("/api/accounts", AccountRoutes);
+app.use("/api/stats", Stats_Routes);
 
 server.listen(port, () => {
   console.log(`Listening to port ${port}`);
