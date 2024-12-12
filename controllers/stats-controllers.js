@@ -15,20 +15,20 @@ const getArticleStats = async (req, res, next) => {
       .populate("articleId")
       .populate("sizeId");
 
-    let transactions = await Transaction.find({})
+    const transactions = await Transaction.find({})
       .populate("customerId")
       .populate("items");
 
-    transactions = transactions.map((dt) => ({
-      ...dt,
-      customer_name: dt.customerId.name,
-      branch: dt.customerId.branch,
-      items: dt.items,
-      invoice_no: dt.invoice_no,
-      date: dt.date,
+    const formattedTransactions = transactions.map((transaction) => ({
+      ...transaction,
+      customer_name: transaction.customerId.name,
+      branch: transaction.customerId.branch,
+      items: transaction.items,
+      invoice_no: transaction.invoice_no,
+      date: transaction.date,
     }));
 
-    const filteredTransactions = transactions
+    const filteredTransactions = formattedTransactions
       .filter((transaction) => transaction.branch === articleDetails.branch)
       .map((transaction) => ({
         ...transaction,
@@ -40,8 +40,8 @@ const getArticleStats = async (req, res, next) => {
 
     const UpdatedTransactions = filteredTransactions.flatMap((transaction) =>
       transaction.items
-        .map((item) => {
-          return item.itemId
+        .map((item) =>
+          item.itemId
             ? {
                 _id: item._id,
                 itemId: item.itemId._id,
@@ -55,8 +55,8 @@ const getArticleStats = async (req, res, next) => {
                 price: item.price,
                 amount: item.amount,
               }
-            : null;
-        })
+            : null
+        )
         .filter(Boolean)
     );
 
