@@ -7,6 +7,7 @@ const { isValidObjectId } = require("mongoose");
 const User = require("../Models/User");
 const Transaction = require("../Models/Transaction");
 const Return = require("../Models/Return");
+const Payment = require("../Models/Payment");
 
 //******************************************************
 // working
@@ -297,6 +298,21 @@ const Get_Bill_No = async (req, res) => {
   }
 };
 
+const getCustomerLedger = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const Cash_Ledger = await Transaction.find({ customerId: id });
+    const Item_Ledger = await await Payment.find({ user_Id: id, user_type: 2 });
+    if (!Cash_Ledger && !Item_Ledger)
+      return createError(res, 404, "No Item Found");
+    return successMessage(res, { cash: Cash_Ledger, item: Item_Ledger }, null);
+  } catch (err) {
+    console.log(err);
+    return createError(res, 500, err.message || err);
+  }
+};
+
 module.exports = {
   Get_Bill_No,
   getBranchCustomers,
@@ -306,4 +322,5 @@ module.exports = {
   deleteCustomer,
   addCustomer,
   CheckCustomers,
+  getCustomerLedger,
 };

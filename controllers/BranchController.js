@@ -1,4 +1,5 @@
 const Branch = require("../Models/Branch");
+const Customer = require("../Models/Customer");
 const Payment = require("../Models/Payment");
 const Transaction = require("../Models/Transaction");
 const User = require("../Models/User");
@@ -7,9 +8,16 @@ const bcrypt = require("bcrypt");
 
 // Create a new branch
 const testApi = async (req, res) => {
+  const { id } = req.params;
   try {
+    let customers = await Customer.findById(id);
+    if (!customers)
+      return createError(res, 404, "No Customer Found with id: " + id);
+
+    let OpeningBalance = customers.opening_balance;
+
     const transactions = await Transaction.find({
-      customerId: "668ce559ba11e2d767038428",
+      customerId: id,
     })
       .populate("customerId")
       .populate("items");
@@ -21,20 +29,20 @@ const testApi = async (req, res) => {
         return {
           date: formattedDate,
           desc: `Sale - Invoice No - ${data.invoice_no}`,
-          cr: data.total_amount,
-          dr: 0,
+          dr: data.total_amount,
+          cr: 0,
+          type: 1, // 1: Sales 2: Payments
+          color: "!text-[green]",
         };
       })
       .flat()
       .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    const Payload = {
-      user_Id: "668ce559ba11e2d767038428",
-      branch: 1,
-    };
     let branchPayments;
 
-    branchPayments = await Payment.find(Payload);
+    branchPayments = await Payment.find({
+      user_Id: id,
+    });
 
     branchPayments = branchPayments.map((bp) => {
       const date = new Date(bp.date * 1000);
@@ -42,14 +50,33 @@ const testApi = async (req, res) => {
       return {
         date: formattedDate,
         desc: bp.desc,
-        cr: 0,
-        dr: bp.amount,
+        dr: 0,
+        cr: bp.amount,
+        type: 2, // 1: Sales 2: Payments
+      };
+    });
+
+    const ledger_data = [...UpdatedTransactions, ...branchPayments].sort(
+      (a, b) => new Date(a.date) - new Date(b.date)
+    );
+
+    const final_ledger = ledger_data.map((LD) => {
+      OpeningBalance =
+        LD.type === 1 ? OpeningBalance + LD.dr : OpeningBalance - LD.cr;
+      return {
+        ...LD,
+        date: Math.floor(new Date(LD.date) / 1000),
+        bal: OpeningBalance,
       };
     });
 
     return successMessage(
       res,
-      [...UpdatedTransactions, ...branchPayments],
+      {
+        customer: customers,
+        ledger: final_ledger,
+        closing_balance: OpeningBalance,
+      },
       "Transactions retrieved successfully!"
     );
   } catch (err) {

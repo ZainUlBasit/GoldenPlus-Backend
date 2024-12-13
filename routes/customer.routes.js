@@ -29,6 +29,12 @@ router.delete(
   CustomerController.deleteCustomer
 );
 router.get(
+  "/complete-legder/:id",
+  VerifyUserCookie,
+  VerifyBranch,
+  CustomerController.getCustomerLedger
+);
+router.get(
   "/get-bill-nos/:id",
   VerifyUserCookie,
   VerifyBranch,
