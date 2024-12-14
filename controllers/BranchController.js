@@ -92,7 +92,7 @@ const SupplieLedger = async (req, res) => {
   console.log(id);
 
   try {
-    let company = await Company.findById("66a0b44b88e206564cdba00a");
+    let company = await Company.findById(id);
     if (!company)
       return createError(res, 404, "No Supplier Found with id: " + id);
     console.log(company);
@@ -100,7 +100,7 @@ const SupplieLedger = async (req, res) => {
     let OpeningBalance = company.opening_balance;
 
     let stocksStats = await Stock.find({
-      supplierId: "66a0b44b88e206564cdba00a",
+      supplierId: id,
     })
       .populate("branchId")
       .populate("articleId")
@@ -117,13 +117,12 @@ const SupplieLedger = async (req, res) => {
         type: 2, // 1: Sales 2: Payments
       };
     });
-    console.log("Hike:", stocksStats);
 
     let branchPayments;
 
     branchPayments = await Payment.find({
       user_type: 1,
-      user_Id: "66a0b44b88e206564cdba00a",
+      user_Id: id,
     });
 
     branchPayments = branchPayments.map((bp) => {
