@@ -1,6 +1,8 @@
 const Branch = require("../Models/Branch");
+const Company = require("../Models/Company");
 const Customer = require("../Models/Customer");
 const Payment = require("../Models/Payment");
+const Stock = require("../Models/Stock");
 const Transaction = require("../Models/Transaction");
 const User = require("../Models/User");
 const { createError, successMessage } = require("../utils/ResponseMessage");
@@ -74,6 +76,86 @@ const testApi = async (req, res) => {
       res,
       {
         customer: customers,
+        ledger: final_ledger,
+        closing_balance: OpeningBalance,
+      },
+      "Transactions retrieved successfully!"
+    );
+  } catch (err) {
+    console.error("Error occurred while fetching transactions:", err);
+    return createError(res, 500, err.message || "Internal Server Error");
+  }
+};
+
+const SupplieLedger = async (req, res) => {
+  const { id } = req.params;
+  console.log(id);
+
+  try {
+    let company = await Company.findById("66a0b44b88e206564cdba00a");
+    if (!company)
+      return createError(res, 404, "No Supplier Found with id: " + id);
+    console.log(company);
+
+    let OpeningBalance = company.opening_balance;
+
+    let stocksStats = await Stock.find({
+      supplierId: "66a0b44b88e206564cdba00a",
+    })
+      .populate("branchId")
+      .populate("articleId")
+      .populate("sizeId");
+
+    stocksStats = stocksStats.map((bp) => {
+      const date = new Date(bp.date * 1000);
+      const formattedDate = date.toISOString().split("T")[0];
+      return {
+        date: formattedDate,
+        desc: bp.desc,
+        dr: 0,
+        cr: bp.total_amount,
+        type: 2, // 1: Sales 2: Payments
+      };
+    });
+    console.log("Hike:", stocksStats);
+
+    let branchPayments;
+
+    branchPayments = await Payment.find({
+      user_type: 1,
+      user_Id: "66a0b44b88e206564cdba00a",
+    });
+
+    branchPayments = branchPayments.map((bp) => {
+      const date = new Date(bp.date * 1000);
+      const formattedDate = date.toISOString().split("T")[0];
+      return {
+        date: formattedDate,
+        desc: bp.desc,
+        dr: bp.amount,
+        cr: 0,
+        type: 1, // 1: Sales 2: Payments
+      };
+    });
+
+    const ledger_data = [...stocksStats, ...branchPayments].sort(
+      (a, b) => new Date(a.date) - new Date(b.date)
+    );
+
+    const final_ledger = ledger_data.map((LD) => {
+      OpeningBalance =
+        LD.type === 1 ? OpeningBalance + LD.dr : OpeningBalance - LD.cr;
+      return {
+        ...LD,
+        date: Math.floor(new Date(LD.date) / 1000),
+        bal: OpeningBalance,
+      };
+    });
+
+    return successMessage(
+      res,
+      {
+        customer: company,
         ledger: final_ledger,
         closing_balance: OpeningBalance,
       },
@@ -201,4 +283,5 @@ module.exports = {
   updateBranch,
   deleteBranch,
   testApi,
+  SupplieLedger,
 };
