@@ -2,6 +2,7 @@ const Branch = require("../Models/Branch");
 const Company = require("../Models/Company");
 const Customer = require("../Models/Customer");
 const Payment = require("../Models/Payment");
+const RawMaterialStock = require("../Models/RawMaterialStock");
 const Stock = require("../Models/Stock");
 const Transaction = require("../Models/Transaction");
 const User = require("../Models/User");
@@ -99,12 +100,9 @@ const SupplieLedger = async (req, res) => {
 
     let OpeningBalance = company.opening_balance;
 
-    let stocksStats = await Stock.find({
+    let stocksStats = await RawMaterialStock.find({
       supplierId: id,
-    })
-      .populate("branchId")
-      .populate("articleId")
-      .populate("sizeId");
+    }).populate("branchId");
 
     stocksStats = stocksStats.map((bp) => {
       const date = new Date(bp.date * 1000);
@@ -117,6 +115,7 @@ const SupplieLedger = async (req, res) => {
         type: 2, // 1: Sales 2: Payments
       };
     });
+    console.log("stats:", stocksStats);
 
     let branchPayments;
 
@@ -143,7 +142,7 @@ const SupplieLedger = async (req, res) => {
 
     const final_ledger = ledger_data.map((LD) => {
       OpeningBalance =
-        LD.type === 1 ? OpeningBalance + LD.dr : OpeningBalance - LD.cr;
+        LD.type === 1 ? OpeningBalance - LD.dr : OpeningBalance + LD.cr;
       return {
         ...LD,
         date: Math.floor(new Date(LD.date) / 1000),
