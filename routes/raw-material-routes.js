@@ -9,6 +9,11 @@ router.post(
   RMController.AddRawMaterialStock
 );
 router.post("/branch", VerifyUserCookie, RMController.GetStockByBranch);
+router.post(
+  "/branch/stats",
+  VerifyUserCookie,
+  RMController.GetSupplierStockStat
+);
 router.patch("/edit", VerifyUserCookie, RMController.EditRawMaterialStock);
 router.post("/delete", VerifyUserCookie, RMController.DeleteRMStock);
 // router.patch("/update", StockController.UpdateSales);

@@ -273,10 +273,34 @@ const GetStockByBranch = async (req, res) => {
     return createError(res, 500, err.message || err);
   }
 };
+const GetSupplierStockStat = async (req, res) => {
+  let { branchId, companyId, startDate, endDate } = req.body;
+  if (!branchId) return createError(res, 422, "Invalid Branch Id!");
+
+  // reqBody;
+  try {
+    const StockStats = await RawMaterialStock.find({
+      branchId,
+      supplierId: companyId,
+      date: {
+        $gte: Math.floor(new Date(startDate) / 1000),
+        $lte: Math.floor(new Date(endDate) / 1000),
+      },
+    }).populate("branchId");
+
+    if (!StockStats)
+      return createError(res, 404, `No record found of Supplier ${companyId}!`);
+    return successMessage(res, StockStats, "Stock successfully retrieved!");
+  } catch (err) {
+    console.log("Error while getting Stock Stats: ", err);
+    return createError(res, 500, err.message || err);
+  }
+};
 
 module.exports = {
   DeleteRMStock,
   AddRawMaterialStock,
   GetStockByBranch,
+  GetSupplierStockStat,
   EditRawMaterialStock,
 };

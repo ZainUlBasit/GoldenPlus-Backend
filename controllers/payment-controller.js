@@ -348,7 +348,7 @@ const updatePayment = async (req, res) => {
         bank_name,
         bank_number,
         amount,
-        date: Math.floor(new Date(date) / 1000),
+        date,
         desc,
         branch,
       },

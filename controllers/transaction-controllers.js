@@ -144,8 +144,8 @@ const GetTransactions = async (req, res) => {
     const transactions = await Transaction.find({
       customerId,
       date: {
-        $gte: Math.floor(new Date(from) / 1000),
-        $lte: Math.floor(new Date(to) / 1000),
+        $gte: fromDateInSeconds,
+        $lte: toDateInSeconds,
       },
     })
       .populate("customerId")
@@ -181,7 +181,7 @@ const GetTransactions = async (req, res) => {
 
     return successMessage(
       res,
-      UpdatedTransactions,
+      transactions,
       "Transactions retrieved successfully!"
     );
   } catch (err) {
