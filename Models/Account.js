@@ -15,6 +15,10 @@ const reqNum = {
 const AccountSchema = new Schema({
   account_name: reqStr,
   account_no: reqNum,
+  opening_balance: {
+    type: Number,
+    default: 0,
+  },
   amount: {
     type: Number,
     default: 0,

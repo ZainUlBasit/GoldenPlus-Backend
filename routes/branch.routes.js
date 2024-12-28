@@ -9,6 +9,7 @@ router.post(
   BranchController.createBranch
 );
 router.get("/complete-ledger/:id", BranchController.testApi);
+router.post("/cash-summary", BranchController.getCashStats);
 router.get("/supplier-complete-ledger/:id", BranchController.SupplieLedger);
 
 router.get("/all", VerifyUserCookie, VerifyAdmin, BranchController.getBranches);

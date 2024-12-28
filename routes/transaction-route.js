@@ -9,6 +9,7 @@ router.post(
   TransactionController.CreateTransaction
 );
 router.post("/all", VerifyUserCookie, TransactionController.GetTransactions);
+router.get("/:id", VerifyUserCookie, TransactionController.GetTransactionById);
 router.post("/summary", VerifyUserCookie, TransactionController.GetItemSummary);
 router.post(
   "/delete",
@@ -33,6 +34,12 @@ router.post(
   VerifyUserCookie,
   VerifyBranch,
   TransactionController.GetInvoiceData
+);
+router.post(
+  "/delete-invoice-item",
+  VerifyUserCookie,
+  VerifyBranch,
+  TransactionController.DeleteInvoiceItem
 );
 
 module.exports = router;

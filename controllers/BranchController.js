@@ -1,3 +1,4 @@
+const Account = require("../Models/Account");
 const Branch = require("../Models/Branch");
 const Company = require("../Models/Company");
 const Customer = require("../Models/Customer");
@@ -85,6 +86,46 @@ const testApi = async (req, res) => {
   } catch (err) {
     console.error("Error occurred while fetching transactions:", err);
     return createError(res, 500, err.message || "Internal Server Error");
+  }
+};
+
+const getCashStats = async (req, res, next) => {
+  const {
+    branch,
+    startDate = 0,
+    endDate = Math.floor(Date.now() / 1000),
+  } = req.body;
+  console.log(req.body);
+
+  let branchPayments;
+  try {
+    const Payload =
+      branch === -1
+        ? {
+            date: {
+              $gte: Math.floor(new Date(startDate) / 1000),
+              $lte: Math.floor(new Date(endDate) / 1000),
+            },
+          }
+        : {
+            branch,
+            date: {
+              $gte: Math.floor(new Date(startDate) / 1000),
+              $lte: Math.floor(new Date(endDate) / 1000),
+            },
+          };
+
+    branchPayments = await Payment.find(Payload);
+    // console.log(branchPayments);
+
+    if (!branchPayments) {
+      return createError(res, 404, "Payments record not found for branch!");
+    } else {
+      return successMessage(res, branchPayments, null);
+    }
+  } catch (err) {
+    console.log(err);
+    return createError(res, 500, err.message || err);
   }
 };
 
@@ -281,5 +322,6 @@ module.exports = {
   updateBranch,
   deleteBranch,
   testApi,
+  getCashStats,
   SupplieLedger,
 };

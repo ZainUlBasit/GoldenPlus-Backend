@@ -27,7 +27,7 @@ router.patch(
   ReportController.UpdateBranch
 );
 router.delete(
-  "/delete",
+  "/delete/:id",
   VerifyUserCookie,
   VerifyBranch,
   ReportController.deleteExpense

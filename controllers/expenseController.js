@@ -124,7 +124,7 @@ const addExpense = async (req, res, next) => {
       desc,
       expense,
       branch,
-      account_name: account,
+      account_name: account.account_name,
       accountId: accountId,
     }).save();
     if (!newExpense) return createError(res, 400, "Unable to add Expense!");
@@ -136,7 +136,7 @@ const addExpense = async (req, res, next) => {
 };
 
 const deleteExpense = async (req, res, next) => {
-  const { expenseId } = req.body;
+  const { id: expenseId } = req.params;
   if (!expenseId) return createError(res, 422, "Invalid Expense Id!");
   try {
     const DeleteExpense = await Expense.findByIdAndDelete(expenseId);
@@ -146,6 +146,14 @@ const deleteExpense = async (req, res, next) => {
         400,
         "Such Expense with expenseId does not exist!"
       );
+
+    const UpdateAmount = Number(DeleteExpense.expense);
+    const account = await Account.findByIdAndUpdate(
+      DeleteExpense.accountId,
+      { $inc: { amount: UpdateAmount } },
+      { new: true }
+    );
+    if (!account) return createError(res, 404, "Account not found");
     return successMessage(
       res,
       DeleteExpense,

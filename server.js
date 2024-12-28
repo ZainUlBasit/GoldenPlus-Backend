@@ -73,7 +73,7 @@ app.use("/api/item", ItemRoutes);
 app.use("/api/raw-material", RM_Routes);
 app.use("/api/article", ArticleRoutes);
 app.use("/api/customer", CustomerRoutes);
-app.use("/api/report", ReportRoutes);
+app.use("/api/report", ReportRoutes); // EXENSE ROUTES
 app.use("/api/payment", PaymentRoutes);
 app.use("/api/stock", StockRoutes);
 app.use("/api/sale-return", SalesReturnRoutes);

@@ -142,6 +142,8 @@ const getBranchPayments = async (req, res, next) => {
             },
           };
 
+    console.log(Payload);
+
     branchPayments = await Payment.find(Payload);
     // console.log(branchPayments);
 

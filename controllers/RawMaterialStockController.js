@@ -263,7 +263,9 @@ const GetStockByBranch = async (req, res) => {
             branchId,
           }
         : {}
-    ).populate("branchId");
+    )
+      .populate("branchId")
+      .sort({ date: -1 });
 
     if (!StockStats)
       return createError(res, 404, `No record found of Branch ${branchId}!`);

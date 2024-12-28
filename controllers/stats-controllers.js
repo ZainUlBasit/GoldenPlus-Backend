@@ -3,6 +3,7 @@ const { createError, successMessage } = require("../utils/ResponseMessage");
 const Article = require("../Models/Article");
 const Stock = require("../Models/Stock");
 const Transaction = require("../Models/Transaction");
+const Payment = require("../Models/Payment");
 
 const getArticleStats = async (req, res, next) => {
   const articleId = req.params.id;

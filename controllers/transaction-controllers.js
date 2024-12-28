@@ -5,6 +5,7 @@ const Product = require("../Models/Product");
 const Item = require("../Models/Item");
 const Customer = require("../Models/Customer");
 const Return = require("../Models/Return");
+const { default: mongoose } = require("mongoose");
 
 const CheckBillNumber = async (req, res, next) => {
   const { invoice_no } = req.body;
@@ -149,7 +150,8 @@ const GetTransactions = async (req, res) => {
       },
     })
       .populate("customerId")
-      .populate("items");
+      .populate("items")
+      .sort({ date: -1 });
     // .populate({ path: "items.itemId" });
 
     console.log(transactions);
@@ -178,6 +180,28 @@ const GetTransactions = async (req, res) => {
         return itemsData;
       })
       .flat();
+
+    return successMessage(
+      res,
+      transactions,
+      "Transactions retrieved successfully!"
+    );
+  } catch (err) {
+    console.error("Error occurred while fetching transactions:", err);
+    return createError(res, 500, err.message || "Internal Server Error");
+  }
+};
+const GetTransactionById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return createError(res, 422, "Valid Customer ID is required!");
+    }
+
+    // Retrieve transactions for the given customer within the specified date range
+    const transactions = await Transaction.findById(id)
+      .populate("customerId")
+      .populate("items");
 
     return successMessage(
       res,
@@ -583,6 +607,51 @@ const DeleteInvoice = async (req, res) => {
     return createError(res, 400, error.message || "Internal server error!");
   }
 };
+const DeleteInvoiceItem = async (req, res) => {
+  const { transId, itemId } = req.body;
+
+  try {
+    const deletedProduct = await Product.findByIdAndDelete(itemId);
+    if (!deletedProduct) {
+      return createError(res, 404, "Product not found with the given ID!");
+    }
+
+    const qty = deletedProduct.qty;
+    const response = await Item.findByIdAndUpdate(
+      deletedProduct.itemId,
+      { $inc: { qty: qty, out_qty: -qty } }, // Decrement qty field by decrementQty
+      { new: true } // Return the updated document
+    );
+
+    const transactions = await Transaction.findByIdAndUpdate(
+      transId,
+      {
+        $inc: {
+          total_amount: -deletedProduct.amount,
+        },
+        $pull: {
+          items: itemId, // Remove itemId from transactions.items
+        },
+      }, // Update total and remaining
+      { new: true }
+    );
+
+    const updateCustomerAccount = await Customer.findByIdAndUpdate(
+      transactions.customerId,
+      {
+        $inc: {
+          total: -Number(deletedProduct.amount),
+          remaining: -Number(deletedProduct.amount),
+        },
+      }, // Decrement qty field by decrementQty
+      { new: true }
+    );
+
+    return successMessage(res, 400, "Transaction item Successfully deleted!");
+  } catch (error) {
+    return createError(res, 400, error.message || "Internal server error!");
+  }
+};
 
 const UpdateInvoiceItem = async (req, res) => {
   const {
@@ -659,8 +728,10 @@ const UpdateInvoiceItem = async (req, res) => {
 module.exports = {
   CreateTransaction,
   GetTransactions,
+  GetTransactionById,
   GetItemSummary,
   DeleteInvoice,
+  DeleteInvoiceItem,
   CheckBillNumber,
   UpdateInvoiceItem,
   GetInvoiceData,
