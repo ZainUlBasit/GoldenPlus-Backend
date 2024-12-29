@@ -11,7 +11,7 @@ const { createError, successMessage } = require("../utils/ResponseMessage");
 const bcrypt = require("bcrypt");
 
 // Create a new branch
-const testApi = async (req, res) => {
+const getCustomerLedger = async (req, res) => {
   const { id } = req.params;
   try {
     let customers = await Customer.findById(id);
@@ -99,29 +99,73 @@ const getCashStats = async (req, res, next) => {
 
   let branchPayments;
   try {
-    const Payload =
-      branch === -1
-        ? {
-            date: {
-              $gte: Math.floor(new Date(startDate) / 1000),
-              $lte: Math.floor(new Date(endDate) / 1000),
-            },
-          }
-        : {
-            branch,
-            date: {
-              $gte: Math.floor(new Date(startDate) / 1000),
-              $lte: Math.floor(new Date(endDate) / 1000),
-            },
-          };
+    const currentBranch =
+      branch === 1
+        ? "Golden Plus PCU"
+        : branch === 2
+        ? "Anmol PCU"
+        : "Green Way PCU";
+    const accounts = await Account.findOne({ branch_name: currentBranch });
+    if (!accounts) {
+      throw new Error("Branch doesn't have an account");
+    }
+
+    let OpeningBalance = accounts.opening_balance;
+
+    const Payload = {
+      branch: 2,
+      date: {
+        $gte: Math.floor(new Date(startDate) / 1000),
+        $lte: Math.floor(new Date(endDate) / 1000),
+      },
+    };
 
     branchPayments = await Payment.find(Payload);
-    // console.log(branchPayments);
+    console.log(branchPayments);
 
-    if (!branchPayments) {
+    const updatedPayments = await branchPayments.map((py) => {
+      const date = new Date(py.date * 1000);
+      const formattedDate = date.toISOString().split("T")[0];
+      // console.log(py.user_type);
+
+      if (py.user_type === 1) {
+        return {
+          date: formattedDate,
+          desc: py.desc,
+          dr: 0,
+          cr: py.amount,
+          type: py.user_type, // 1: Supplier 2: Customer
+        };
+      } else {
+        return {
+          date: formattedDate,
+          desc: py.desc,
+          dr: py.amount,
+          cr: 0,
+          type: py.user_type, // 1: Supplier 2: Customer
+        };
+      }
+    });
+
+    const final_cash_stats = updatedPayments.map((LD) => {
+      if (LD.type === 1) {
+        OpeningBalance -= LD.cr;
+      }
+
+      if (LD.type === 2) {
+        OpeningBalance += LD.dr;
+      }
+      return {
+        ...LD,
+        date: Math.floor(new Date(LD.date) / 1000),
+        bal: OpeningBalance,
+      };
+    });
+
+    if (!final_cash_stats) {
       return createError(res, 404, "Payments record not found for branch!");
     } else {
-      return successMessage(res, branchPayments, null);
+      return successMessage(res, final_cash_stats, null);
     }
   } catch (err) {
     console.log(err);
@@ -315,13 +359,41 @@ const deleteBranch = async (req, res) => {
   }
 };
 
+const testApi = async (req, res) => {
+  try {
+    // Your API logic here
+    const companies = await Company.find({});
+    const updateResults = await Promise.all(
+      companies.map(async (cm) => {
+        const payments = await Payment.updateMany(
+          { user_Id: cm._id },
+          { branch: cm.branch }
+        );
+        if (payments.nModified === 0) {
+          console.log(`No payments found for userId: ${cm._id}`);
+        } else {
+          console.log(
+            `Updated ${payments.nModified} payments for userId: ${cm._id}, new branch: ${cm.branch}`
+          );
+        }
+        return payments.nModified; // Return the number of modified payments
+      })
+    );
+
+    return successMessage(res, updateResults, "Test API successful");
+  } catch (error) {
+    return createError(res, 500, error.message);
+  }
+};
+
 module.exports = {
+  testApi,
   createBranch,
   getBranches,
   getBranchById,
   updateBranch,
   deleteBranch,
-  testApi,
+  getCustomerLedger,
   getCashStats,
   SupplieLedger,
 };

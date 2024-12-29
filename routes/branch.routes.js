@@ -8,7 +8,7 @@ router.post(
   VerifyAdmin,
   BranchController.createBranch
 );
-router.get("/complete-ledger/:id", BranchController.testApi);
+router.get("/complete-ledger/:id", BranchController.getCustomerLedger);
 router.post("/cash-summary", BranchController.getCashStats);
 router.get("/supplier-complete-ledger/:id", BranchController.SupplieLedger);
 
@@ -20,7 +20,7 @@ router.patch(
   BranchController.updateBranch
 );
 
-// router.post("/branch", BranchController.getBranchCustomers);
+router.get("/testing", BranchController.testApi);
 // router.delete("/delete/:id", BranchController.deleteCustomer);
 
 module.exports = router;
