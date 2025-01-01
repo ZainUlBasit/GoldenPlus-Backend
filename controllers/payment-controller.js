@@ -145,6 +145,7 @@ const getBranchPayments = async (req, res, next) => {
     console.log(Payload);
 
     branchPayments = await Payment.find(Payload);
+    branchPayments = branchPayments.sort((a, b) => b.date - a.date);
     // console.log(branchPayments);
 
     if (!branchPayments) {

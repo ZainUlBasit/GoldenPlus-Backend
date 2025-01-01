@@ -121,7 +121,7 @@ const getCashStats = async (req, res, next) => {
     };
 
     branchPayments = await Payment.find(Payload);
-    console.log(branchPayments);
+    // console.log(branchPayments);
 
     const updatedPayments = await branchPayments.map((py) => {
       const date = new Date(py.date * 1000);
@@ -161,6 +161,8 @@ const getCashStats = async (req, res, next) => {
         bal: OpeningBalance,
       };
     });
+
+    console.log(final_cash_stats);
 
     if (!final_cash_stats) {
       return createError(res, 404, "Payments record not found for branch!");
