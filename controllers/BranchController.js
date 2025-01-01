@@ -134,7 +134,7 @@ const getCashStats = async (req, res, next) => {
           desc: py.desc,
           dr: 0,
           cr: py.amount,
-          type: py.user_type, // 1: Supplier 2: Customer
+          type: 2, // 1: Supplier 2: Customer
         };
       } else {
         return {
@@ -142,17 +142,17 @@ const getCashStats = async (req, res, next) => {
           desc: py.desc,
           dr: py.amount,
           cr: 0,
-          type: py.user_type, // 1: Supplier 2: Customer
+          type: 1, // 1: Supplier 2: Customer
         };
       }
     });
 
     const final_cash_stats = updatedPayments.map((LD) => {
-      if (LD.type === 1) {
+      if (LD.type === 2) {
         OpeningBalance -= LD.cr;
       }
 
-      if (LD.type === 2) {
+      if (LD.type === 1) {
         OpeningBalance += LD.dr;
       }
       return {
