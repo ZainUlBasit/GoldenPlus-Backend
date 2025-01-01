@@ -113,7 +113,7 @@ const getCashStats = async (req, res, next) => {
     let OpeningBalance = accounts.opening_balance;
 
     const Payload = {
-      branch: 2,
+      branch: branch,
       date: {
         $gte: Math.floor(new Date(startDate) / 1000),
         $lte: Math.floor(new Date(endDate) / 1000),
