@@ -364,7 +364,7 @@ const deleteBranch = async (req, res) => {
 const testApi = async (req, res) => {
   try {
     // Your API logic here
-    const companies = await Company.find({});
+    const companies = await Customer.find({});
     const updateResults = await Promise.all(
       companies.map(async (cm) => {
         const payments = await Payment.updateMany(
