@@ -120,7 +120,7 @@ const getCashStats = async (req, res, next) => {
       },
     };
 
-    branchPayments = await Payment.find(Payload);
+    branchPayments = await Payment.find(Payload).sort({ date: 1 });
     // console.log(branchPayments);
 
     const updatedPayments = await branchPayments.map((py) => {
