@@ -2,6 +2,7 @@ const Account = require("../Models/Account");
 const Branch = require("../Models/Branch");
 const Company = require("../Models/Company");
 const Customer = require("../Models/Customer");
+const Expense = require("../Models/Expense");
 const Payment = require("../Models/Payment");
 const RawMaterialStock = require("../Models/RawMaterialStock");
 const Stock = require("../Models/Stock");
@@ -9,6 +10,7 @@ const Transaction = require("../Models/Transaction");
 const User = require("../Models/User");
 const { createError, successMessage } = require("../utils/ResponseMessage");
 const bcrypt = require("bcrypt");
+const { updatePayment } = require("./payment-controller");
 
 // Create a new branch
 const getCustomerLedger = async (req, res) => {
@@ -95,83 +97,81 @@ const getCashStats = async (req, res, next) => {
     startDate = 0,
     endDate = Math.floor(Date.now() / 1000),
   } = req.body;
-  console.log(req.body);
 
-  let branchPayments;
   try {
-    const currentBranch =
-      branch === 1
-        ? "Golden Plus PCU"
-        : branch === 2
-        ? "Anmol PCU"
-        : "Green Way PCU";
-    const accounts = await Account.findOne({ branch_name: currentBranch });
-    if (!accounts) {
-      throw new Error("Branch doesn't have an account");
+    // Determine branch name based on input
+    const branchNames = {
+      1: "Golden Plus PCU",
+      2: "Anmol PCU",
+      3: "Green Way PCU",
+    };
+    const currentBranch = branchNames[branch];
+    if (!currentBranch) {
+      throw new Error("Invalid branch specified.");
     }
 
-    let OpeningBalance = accounts.opening_balance;
+    // Fetch account for the branch
+    const account = await Account.findOne({ branch_name: currentBranch });
+    if (!account) {
+      throw new Error("Branch doesn't have an account");
+    }
+    let openingBalance = account.opening_balance;
 
-    const Payload = {
-      branch: branch,
-      date: {
-        $gte: Math.floor(new Date(startDate) / 1000),
-        $lte: Math.floor(new Date(endDate) / 1000),
-      },
+    // Define date filter
+    const dateFilter = {
+      $gte: Math.floor(new Date(startDate) / 1000),
+      $lte: Math.floor(new Date(endDate) / 1000),
     };
 
-    branchPayments = await Payment.find(Payload).sort({ date: 1 });
-    // console.log(branchPayments);
+    // Fetch payments and expenses
+    const [branchPayments, expenses] = await Promise.all([
+      Payment.find({ branch, date: dateFilter }),
+      Expense.find({ branch: Number(branch), date: dateFilter }),
+    ]);
 
-    const updatedPayments = await branchPayments.map((py) => {
-      const date = new Date(py.date * 1000);
-      const formattedDate = date.toISOString().split("T")[0];
-      // console.log(py.user_type);
+    // Format payments
+    const formattedPayments = branchPayments.map((payment) => ({
+      date: new Date(payment.date * 1000).toISOString().split("T")[0],
+      desc: payment.desc,
+      dr: payment.user_type === 2 ? payment.amount : 0,
+      cr: payment.user_type === 1 ? payment.amount : 0,
+      type: payment.user_type, // 1: Supplier, 2: Customer
+    }));
 
-      if (py.user_type === 1) {
-        return {
-          date: formattedDate,
-          desc: py.desc,
-          dr: 0,
-          cr: py.amount,
-          type: py.user_type, // 1: Supplier 2: Customer
-        };
-      } else {
-        return {
-          date: formattedDate,
-          desc: py.desc,
-          dr: py.amount,
-          cr: 0,
-          type: py.user_type, // 1: Supplier 2: Customer
-        };
-      }
-    });
+    // Format expenses
+    const formattedExpenses = expenses.map((expense) => ({
+      date: new Date(expense.date * 1000).toISOString().split("T")[0],
+      desc: expense.desc,
+      dr: 0,
+      cr: expense.expense,
+      type: 1, // Treated as Supplier
+    }));
 
-    const final_cash_stats = updatedPayments.map((LD) => {
-      if (LD.type === 1) {
-        OpeningBalance -= LD.cr;
-      }
+    // Combine and sort by date
+    const combinedRecords = [...formattedPayments, ...formattedExpenses].sort(
+      (a, b) => new Date(a.date) - new Date(b.date)
+    );
 
-      if (LD.type === 2) {
-        OpeningBalance += LD.dr;
-      }
+    // Calculate final cash stats
+    const finalCashStats = combinedRecords.map((record) => {
+      if (record.type === 1) openingBalance -= record.cr;
+      if (record.type === 2) openingBalance += record.dr;
+
       return {
-        ...LD,
-        date: Math.floor(new Date(LD.date) / 1000),
-        bal: OpeningBalance,
+        ...record,
+        date: Math.floor(new Date(record.date) / 1000),
+        bal: openingBalance,
       };
     });
 
-    console.log(final_cash_stats);
-
-    if (!final_cash_stats) {
-      return createError(res, 404, "Payments record not found for branch!");
-    } else {
-      return successMessage(res, final_cash_stats, null);
+    // Return response
+    if (finalCashStats.length === 0) {
+      return createError(res, 404, "No payments or expenses found for branch.");
     }
+    return successMessage(res, finalCashStats, null);
   } catch (err) {
-    console.log(err);
-    return createError(res, 500, err.message || err);
+    console.error(err);
+    return createError(res, 500, err.message || "Internal server error.");
   }
 };
 
@@ -202,7 +202,7 @@ const SupplieLedger = async (req, res) => {
         type: 2, // 1: Sales 2: Payments
       };
     });
-    console.log("stats:", stocksStats);
+    // console.log("stats:", stocksStats);
 
     let branchPayments;
 
@@ -222,6 +222,12 @@ const SupplieLedger = async (req, res) => {
         type: 1, // 1: Sales 2: Payments
       };
     });
+
+    const totalCr = stocksStats.reduce((sum, bp) => sum + bp.cr, 0);
+    console.log("Total CR:", totalCr);
+
+    const totalDr = branchPayments.reduce((sum, bp) => sum + bp.dr, 0);
+    console.log("Total DR:", totalDr);
 
     const ledger_data = [...stocksStats, ...branchPayments].sort(
       (a, b) => new Date(a.date) - new Date(b.date)

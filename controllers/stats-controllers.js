@@ -9,7 +9,6 @@ const getArticleStats = async (req, res, next) => {
   const articleId = req.params.id;
   try {
     const articleDetails = await Article.findById(articleId);
-    console.log(articleDetails);
 
     const StockStats = await Stock.find({ articleId })
       .populate("branchId")

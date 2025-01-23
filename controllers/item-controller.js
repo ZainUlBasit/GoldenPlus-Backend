@@ -37,7 +37,6 @@ const getBranchItems = async (req, res, next) => {
       items = await Item.find({ branch })
         .populate("branchId")
         .populate("articleId");
-    console.log(items);
     if (!items)
       return createError(res, 404, "Items record not found for branch!");
     else return successMessage(res, items, null);
