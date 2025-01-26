@@ -369,27 +369,30 @@ const deleteBranch = async (req, res) => {
 
 const testApi = async (req, res) => {
   try {
-    // Your API logic here
-    const companies = await Customer.find({});
-    const updateResults = await Promise.all(
-      companies.map(async (cm) => {
-        const payments = await Payment.updateMany(
-          { user_Id: cm._id },
-          { branch: cm.branch }
-        );
-        if (payments.nModified === 0) {
-          console.log(`No payments found for userId: ${cm._id}`);
-        } else {
-          console.log(
-            `Updated ${payments.nModified} payments for userId: ${cm._id}, new branch: ${cm.branch}`
-          );
-        }
-        return payments.nModified; // Return the number of modified payments
-      })
-    );
+    // Fetch payments from the database
+    const payments = await Expense.find({
+      expense: 10000,
+    });
 
-    return successMessage(res, updateResults, "Test API successful");
+    // Update payment data with formatted dates
+    const updatedPayments = payments
+      .map((dt) => {
+        const date = new Date(dt.date * 1000); // Convert the timestamp to a Date object
+        const formattedDate = `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+        return {
+          ...dt._doc, // Spread the document to preserve all other fields
+          date: formattedDate, // Override the date field with the formatted date
+        };
+      })
+      .filter((payment) => payment.date === "2024-07-25"); // Filter for the specific date
+
+    // Return a success response with the updated data
+    return successMessage(res, updatedPayments, "Test API successful");
   } catch (error) {
+    // Handle any errors during execution
     return createError(res, 500, error.message);
   }
 };

@@ -19,7 +19,7 @@
     "http": "^0.0.1-security",
     "joi": "^17.7.0",
     "jsonwebtoken": "^9.0.0",
-    "moment": "^2.29.4",
+    "moment": "^2.30.1",
     "momment": "^0.0.1",
     "mongoose": "^8.2.1",
     "mongoose-sequence": "^6.0.1",

@@ -14,6 +14,7 @@ const reqNum = {
 
 const FixedAssetsSchema = new Schema({
   name: reqStr,
+  desc: reqStr,
   amount: {
     type: Number,
     required: true,
