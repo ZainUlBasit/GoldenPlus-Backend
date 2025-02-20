@@ -655,71 +655,72 @@ const DeleteInvoiceItem = async (req, res) => {
 
 const UpdateInvoiceItem = async (req, res) => {
   const {
+    transId,
     customerId,
-    CurrentInvoiceInfo,
-    DeleteInvoicesId,
-    UpdateInvoiceData,
+    itemId,
+    qty,
+    price,
+    article_name,
+    article_size,
+    purchase,
+    amount,
   } = req.body;
 
-  console.log(req.body);
-  // return createError(res, 422, "testing!");
-
   try {
-    // const UpdatedProduct = await Product.findByIdAndUpdate(
-    //   InvoiceInfo._id,
-    //   {
-    //     price: updateValue.price,
-    //     qty: updateValue.qty,
-    //     amount: updateValue.amount,
-    //   },
-    //   {
-    //     new: true,
-    //   }
-    // );
+    // Create a new item in the Product collection instead of updating
+    const newProduct = new Product({
+      itemId,
+      qty,
+      price,
+      article_name,
+      article_size,
+      purchase,
+      amount,
+    });
 
-    // const UpdateTransaction = await Transaction.findOneAndUpdate(
-    //   {
-    //     invoice_no: InvoiceInfo.invoice_no,
-    //   },
-    //   {
-    //     $inc: {
-    //       total_amount:
-    //         -Number(InvoiceInfo.amount) + Number(updateValue.amount),
-    //     },
-    //   }, // Decrement qty field by decrementQty
-    //   { new: true }
-    // );
+    const createdProduct = await newProduct.save();
 
-    // const updateCustomerAccount = await Customer.findByIdAndUpdate(
-    //   customerId,
-    //   {
-    //     $inc: {
-    //       total: -Number(InvoiceInfo.amount) + Number(updateValue.amount),
-    //       remaining: -Number(InvoiceInfo.amount) + Number(updateValue.amount),
-    //     },
-    //   }, // Decrement qty field by decrementQty
-    //   { new: true }
-    // );
+    const response = await Item.findByIdAndUpdate(
+      itemId,
+      { $inc: { qty: -qty, out_qty: qty } }, // Decrement qty field by decrementQty
+      { new: true } // Return the updated document
+    );
 
-    // const ItemQtyUpdated = await Item.findByIdAndUpdate(
-    //   InvoiceInfo.itemId,
-    //   {
-    //     $inc: {
-    //       qty: Number(InvoiceInfo.qty) - Number(updateValue.qty),
-    //       out_qty: -Number(InvoiceInfo.qty) + Number(updateValue.qty),
-    //     },
-    //   }, // Decrement qty field by decrementQty
-    //   { new: true } // Return the updated document
-    // );
+    // Update the transaction
+    const transaction = await Transaction.findByIdAndUpdate(
+      transId,
+      {
+        $push: {
+          items: newProduct,
+        },
+        $inc: {
+          total_amount: amount,
+        },
+      },
+      { new: true }
+    );
 
-    // if (updateCustomerAccount)
-    // return successMessage(
-    //   res,
-    //   UpdateTransaction,
-    //   "Invoice item successfully updated!"
-    // );
-    // else
-    return createError(res, 400, "Unable to Update Invoice Item");
+    if (!transaction) {
+      return createError(res, 404, "Transaction not found with the given ID!");
+    }
+
+    // Update the customer account
+    const updateCustomerAccount = await Customer.findByIdAndUpdate(
+      customerId,
+      {
+        $inc: {
+          total: amount,
+          remaining: amount,
+        },
+      },
+      { new: true }
+    );
+
+    return successMessage(
+      res,
+      transaction,
+      "Invoice item successfully updated!"
+    );
   } catch (err) {
     return createError(res, 400, err.message || "Internal server error!");
   }

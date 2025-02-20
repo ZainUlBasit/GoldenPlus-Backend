@@ -88,7 +88,6 @@ const addExpense = async (req, res, next) => {
     expense,
     branch,
     accountId,
-    account,
   } = req.body;
 
   const reqStr = Joi.string().required();
@@ -341,6 +340,14 @@ const UpdateBranch = async (req, res) => {
     return createError(res, 422, "Required fields are undefined!");
 
   try {
+    const existingExpense = await Expense.findById(expenseId);
+    if (!existingExpense)
+      return createError(res, 404, "No expense data found!");
+
+    const currentExpenseAmount = Number(existingExpense.expense);
+    const updatedExpenseAmount = Number(payload.expense); // Assuming payload contains the updated expense amount
+    const expenseDifference = updatedExpenseAmount - currentExpenseAmount;
+
     const expenseUpdate = await Expense.findByIdAndUpdate(
       expenseId,
       { ...payload, date: Math.floor(new Date(payload.date) / 1000) },
@@ -348,6 +355,15 @@ const UpdateBranch = async (req, res) => {
         new: true,
       }
     );
+    // const amount =
+    const UpdateAmount = Number(expenseUpdate.expense);
+    const account = await Account.findByIdAndUpdate(
+      existingExpense.accountId,
+      { $inc: { amount: expenseDifference } },
+      { new: true }
+    );
+    if (!account) return createError(res, 404, "Account not found");
+
     if (!expenseUpdate) return createError(res, 404, "No data found!");
     else
       return successMessage(

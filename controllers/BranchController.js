@@ -370,24 +370,20 @@ const deleteBranch = async (req, res) => {
 const testApi = async (req, res) => {
   try {
     // Fetch payments from the database
-    const payments = await Expense.find({
-      expense: 10000,
-    });
+    const payments = await Expense.find({ branch: 3 });
 
     // Update payment data with formatted dates
-    const updatedPayments = payments
-      .map((dt) => {
-        const date = new Date(dt.date * 1000); // Convert the timestamp to a Date object
-        const formattedDate = `${date.getFullYear()}-${String(
-          date.getMonth() + 1
-        ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const updatedPayments = payments.map((dt) => {
+      const date = new Date(dt.date * 1000); // Convert the timestamp to a Date object
+      const formattedDate = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
-        return {
-          ...dt._doc, // Spread the document to preserve all other fields
-          date: formattedDate, // Override the date field with the formatted date
-        };
-      })
-      .filter((payment) => payment.date === "2024-07-25"); // Filter for the specific date
+      return {
+        ...dt._doc, // Spread the document to preserve all other fields
+        date: formattedDate, // Override the date field with the formatted date
+      };
+    });
 
     // Return a success response with the updated data
     return successMessage(res, updatedPayments, "Test API successful");
