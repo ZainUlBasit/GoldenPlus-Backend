@@ -8,12 +8,27 @@ const Payment = require("../Models/Payment");
 const getArticleStats = async (req, res, next) => {
   const articleId = req.params.id;
   try {
-    const articleDetails = await Article.findById(articleId);
+    let articleDetails;
+    if (articleId.slice(0, 3) === "all") {
+      const splitString = articleId.split("_");
+      articleDetails = await Article.find({ branchId: splitString[1] });
+    } else {
+      articleDetails = await Article.findById(articleId);
+    }
 
-    const StockStats = await Stock.find({ articleId })
-      .populate("branchId")
-      .populate("articleId")
-      .populate("sizeId");
+    let StockStats;
+    if (articleId.slice(0, 3) === "all") {
+      const splitString = articleId.split("_");
+      StockStats = await Stock.find({ branchId: splitString[1] })
+        .populate("branchId")
+        .populate("articleId")
+        .populate("sizeId");
+    } else {
+      StockStats = await Stock.find({ articleId })
+        .populate("branchId")
+        .populate("articleId")
+        .populate("sizeId");
+    }
 
     const transactions = await Transaction.find({})
       .populate("customerId")
@@ -28,15 +43,26 @@ const getArticleStats = async (req, res, next) => {
       date: transaction.date,
     }));
 
-    const filteredTransactions = formattedTransactions
-      .filter((transaction) => transaction.branch === articleDetails.branch)
-      .map((transaction) => ({
-        ...transaction,
-        items: transaction.items.filter(
-          (item) => item.article_name === articleDetails.name
-        ),
-      }))
-      .filter((transaction) => transaction.items.length > 0);
+    let filteredTransactions;
+
+    if (articleId.slice(0, 3) === "all") {
+      filteredTransactions = formattedTransactions
+        .filter(
+          (transaction) => transaction.branch === articleDetails[0].branch
+        )
+        .filter((transaction) => transaction.items.length > 0);
+      console.log(filteredTransactions);
+    } else {
+      filteredTransactions = formattedTransactions
+        .filter((transaction) => transaction.branch === articleDetails.branch)
+        .map((transaction) => ({
+          ...transaction,
+          items: transaction.items.filter(
+            (item) => item.article_name === articleDetails.name
+          ),
+        }))
+        .filter((transaction) => transaction.items.length > 0);
+    }
 
     const UpdatedTransactions = filteredTransactions.flatMap((transaction) =>
       transaction.items
