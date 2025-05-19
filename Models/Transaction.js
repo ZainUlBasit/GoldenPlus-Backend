@@ -8,23 +8,7 @@ const TransactionSchema = new Schema({
   items: [{ type: mongoose.Types.ObjectId, ref: "product" }],
   discount: { type: Number, required: true },
   total_amount: { type: Number, required: true },
+  branchId: { type: mongoose.Types.ObjectId, ref: "Branch" },
 });
-
-// TransactionSchema.pre("save", async function (next) {
-//   try {
-//     if (!this.invoice_no) {
-//       const lastTransaction = await this.constructor.findOne(
-//         {},
-//         {},
-//         { sort: { invoice_no: -1 } }
-//       );
-//       const lastInvoiceNo = lastTransaction ? lastTransaction.invoice_no : 0;
-//       this.invoice_no = lastInvoiceNo + 1;
-//     }
-//     next();
-//   } catch (error) {
-//     next(error);
-//   }
-// });
 
 module.exports = mongoose.model("Transaction", TransactionSchema);

@@ -26,6 +26,7 @@ const CustomerSchema = new Schema({
   contact: reqStr,
   address: reqStr,
   branch: reqNum,
+  branchId: { type: mongoose.Types.ObjectId, ref: "Branch" },
   ref: reqStr,
   page: reqNum,
   return_amount: { type: Number, default: 0, required: true },

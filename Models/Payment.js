@@ -18,6 +18,8 @@ const PaymentSchema = new Schema({
   date: { type: Number, default: () => Math.floor(Date.now() / 1000) },
   desc: reqStr,
   branch: reqNum,
+  branchId: { type: mongoose.Types.ObjectId, ref: "Branch" },
+
   invoice_no: { type: Number },
 });
 
